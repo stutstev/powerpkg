@@ -1,13 +1,21 @@
 # powerpkg
 
-A Windows-exclusive software package facilitator; an installation script on steroids for enterprise MDM-hosted packages, with optional actions, conditions and exceptions as core features. It is deliberately designed to behave in accordance to an adjacent [configuration file](#package-file-packagexml), ensuring a low learning curve, code standardization among every instance, and easy software updates (when available).
+<br>
+
+Portable software and configuration deployment facilitator tool for Windows enterprise networks.
+
+<br>
 
 ![](/img/header.gif)
 
-## Section
+<br>
 
-1. [Requirement](#requirement)
-2. [Getting Started](#getting-started)
+# Section
+
+<br>
+
+1. [Requirements](#requirements)
+2. [Story](#story)
 3. [How It Works](#how-it-works)
 4. [Package File (`package.xml`)](#package-file-packagexml)
     - [Script Configuration (`<Configuration>`)](#script-configuration-configuration)
@@ -17,7 +25,8 @@ A Windows-exclusive software package facilitator; an installation script on ster
     - [Task Entry (`<TaskEntry>`)](#task-entry-taskentry)
         - [TaskName](#taskname)
         - [Executable](#executable)
-        - [OperatingSystem](#operatingsystem)
+        - [PlatformName](#platformname)
+        - [PlatformVersion](#platformversion)
         - [Architecture](#architecture)
         - [TerminateProcess](#terminateprocess)
         - [TerminateMessage](#terminatemessage)
@@ -26,40 +35,51 @@ A Windows-exclusive software package facilitator; an installation script on ster
         - [VerifyInstall](#verifyinstall)
         - [SkipProcessCount](#skipprocesscount)
 5. [Debugging](#debugging)
-6. [License](#license)
-7. [Additional Comments](#additional-comments)
+    - [Skipping Task Entries](#skipping-task-entries)
+    - [Exit Codes](#exit-codes)
 
-## Requirement
+<br>
 
-Before reading through this documentation, please note that a minimum of **PowerShell 2.0** is required to utilize this project. **However, PowerShell 3.0 or higher is recommended.**
+# Requirements
 
-## Getting Started
+<br>
 
-To begin testing powerpkg:
+This project was written during a time when **Windows 7 SP1 (v6.1.7601)** and **PowerShell v3.0** were the common versions of these platforms in Windows enterprise environments. Subsequent versions of these platforms should be fully supported, too.
 
-**(1)**: Clone this repository or download it as a ZIP file.
+<br>
 
-**(2)**: Invoke `powerpkg.ps1`:
-```shell
-powershell.exe -NoProfile -ExecutionPolicy Unrestricted -File "contrib\example_package\powerpkg.ps1"
-```
+# Story
 
-**(3)**: *And that's it!*
+<br>
 
-> **NOTE**:
->
-> To discover basic usage of powerpkg, refer to the [How It Works](#how-it-works) segment of this README.
+In 2015, when I was still part of the IT industry, I was working in a help desk position within a Microsoft environment. At the time, I had inherited the responsibility of overseeing this firm's software deployment and configuration management processes. This firm was utilizing Novell ZENworks (in an attempt) to conduct these processes across their network of laptops and workstations.
 
-## How It Works
+However, much like Windows itself, ZENworks functioned like a black box; unattended deployments were obscured and difficult to perform and debug. Every package had to be built using a basic, unscalable GUI wrapper on top of a buggy web interface. Management also recognized many of ZENworks' flaws, but their response was not assuring. Without prior consultation, management unanimously agreed to migrate to another proprietary, GUI-centric, third-party platform that proved to be only a marginal improvement.
 
-**(1)**: Save the following XML element inside a [`package.xml`](#package-file-packagexml) file alongside `powerpkg.ps1`:
+Stuck between a dying platform and a future, but unpromising, successor, I created `powerpkg` in pursuit of a platform-agnostic and self-contained packaging solution. My goals were to establish agency over our package repository; achieve portability, maintainability and scalability; and allow for an easier switch between deployment platforms. Proudly so, I was successful in significantly alleviating the stress of this circumstance.
+
+While I no longer work in the IT industry as of 2025, I continue to be a full-time computer hobbyist and write software out of pure passion. Do not hesitate to submit a ticket or contact me if an issue arises.
+
+<br>
+
+# How It Works
+
+<br>
+
+Hypothetically, consider this project as a means to accomplish a single task by packaging a portable Ansible executable alongside an Ansible playbook YAML file, and processing them locally.
+
+The behavior of `powerpkg` is dependent upon an accompanying XML configuration file, [`package.xml`](#package-file-packagexml), that administrators can customize to their liking. For an example on how to build such a configuration yourself:
+
+<br>
+
+1. Save the following XML element inside a `package.xml` file alongside `powerpkg.ps1`:
 
 ```xml
 <Package>
 </Package>
 ```
 
-**(2)**: Copy the following [script configuration](#script-configuration-configuration) XML element and paste it inside the `<Package>` XML element:
+2. Copy the following [script configuration](#script-configuration-configuration) XML element and paste it inside the `<Package>` XML element:
 
 ```xml
 <Configuration>
@@ -69,7 +89,7 @@ powershell.exe -NoProfile -ExecutionPolicy Unrestricted -File "contrib\example_p
 </Configuration>
 ```
 
-**(3)**: Copy the following [task entry](#task-entry-taskentry) XML element and paste it below the `<Configuration>` XML element:
+3. Copy the following [task entry](#task-entry-taskentry) XML element and paste it below the `<Configuration>` XML element:
 
 ```xml
 <TaskEntry>
@@ -78,7 +98,7 @@ powershell.exe -NoProfile -ExecutionPolicy Unrestricted -File "contrib\example_p
 </TaskEntry>
 ```
 
-**(4)**: Ensure your package file (`package.xml`) appears as this example:
+4. Ensure your package file (`package.xml`) appears as this example:
 
 ```xml
 <Package>
@@ -94,21 +114,22 @@ powershell.exe -NoProfile -ExecutionPolicy Unrestricted -File "contrib\example_p
 </Package>
 ```
 
-**(5)**: Invoke `powerpkg.ps1`:
+5. Run `powerpkg.ps1`:
 
 ```shell
 powershell.exe -NoProfile -ExecutionPolicy Unrestricted -File "powerpkg.ps1"
 ```
 
-**(6)**: As `powerpkg.ps1` is running, you will notice output similar to the following example:
+6. As `powerpkg.ps1` is running, you will notice output that is similar to the following example:
 
 ```
 Initiating Package (Example Package):
 
-Host                       : examplehost1
-Operating System (Windows) : 6.3
-Userspace Architecture     : AMD64
-User                       : misterpeguero
+Host                       : examplehost
+Platform Name              : Windows
+Platform Version           : 10.0
+Architecture               : x64
+User                       : user
 
 ----
 
@@ -136,24 +157,30 @@ Tasks Processed : 1
 
 OK: (0)
 ```
-**(7)**: *And that's it!*
 
-The last line in the example output above (`OK: (0)`) solely reports the exit code of `powerpkg.ps1`. In this case, the zero exit code indicates a successful package deployment. Specified executables also report an exit code upon their invocation and have an influence on the exit code of `powerpkg.ps1`.
+That's the gist of `powerpkg` and how it works!
 
-> **NOTE**:
->
+The last line in the example output above, `OK: (0)`, reports the performance of `powerpkg.ps1` in the form of an exit code. In this case, the zero exit code indicates a successful deployment. As shown above, specific task entries report their own exit code. Such results are factored into the final exit code of `powerpkg.ps1`.
+
+<br>
+
+> [!NOTE]
 > If `powerpkg.ps1` terminates with a non-zero exit code, determine its meaning in the [Debugging](#debugging) segment of this README.
 >
-> To discover in-depth usage of powerpkg, refer to the [Package File](#package-file-packagexml) segment of this README.
+> To further information on usage of `package.xml`, refer to the [Package File](#package-file-packagexml) segment of this README.
 
-## Package File (`package.xml`)
+<br>
 
-A package file is a configuration file of `powerpkg.ps1` that consists of instructions that:
+# Package File (`package.xml`)
 
-  1. [Specify how `powerpkg.ps1` should behave](#script-configuration-configuration), using one `<Configuration>` XML element.
-  2. [What executables to invoke and how to invoke them](#task-entry-taskentry), using one or more `<TaskEntry>` XML elements.
+<br>
 
-And are typically presented in the following manner:
+A package file is a configuration file that features a series of instructions that determine:
+
+- [What global options should be used when initially calling `powerpkg`](#script-configuration-configuration).
+- [What commands and executables to call and what conditions should be met](#task-entry-taskentry).
+
+Package files should be structured in the following manner:
 
 ```xml
 <Package>
@@ -165,7 +192,7 @@ And are typically presented in the following manner:
 	<TaskEntry>
 		<TaskName></TaskName>
 		<Executable></Executable>
-		<OperatingSystem></OperatingSystem>
+		<PlatformVersion></PlatformVersion>
 		<Architecture></Architecture>
 		<TerminateProcess></TerminateProcess>
 		<TerminateMessage></TerminateMessage>
@@ -189,9 +216,9 @@ Which, with a bit of customization, can become the following example:
 	<TaskEntry>
 		<TaskName>Example Task Entry</TaskName>
 		<Executable>powershell.exe -NoProfile Write-Host "Hello World!"</Executable>
-		<OperatingSystem>6.1</OperatingSystem>
-		<Architecture>AMD64</Architecture>
-		<TerminateProcess>exampleprocess</TerminateProcess>
+		<PlatformVersion>10.0</PlatformVersion>
+		<Architecture>x64</Architecture>
+		<TerminateProcess>example_process</TerminateProcess>
 		<TerminateMessage>Example Program will terminate. Press OK to continue.</TerminateMessage>
 		<SuccessExitCode>1234</SuccessExitCode>
 		<ContinueIfFail>true</ContinueIfFail>
@@ -210,126 +237,176 @@ Which, with a bit of customization, can become the following example:
 </Package>
 ```
 
-To further familiarize yourself with powerpkg (and especially the above examples), continue reading the [Script Configuration](#script-configuration-configuration) and [Task Entry](#task-entry-taskentry) segments of this README. Examining the contents of the `\contrib\example_package` directory is also encouraged.
+To familiarize yourself with `powerpkg`, continue reading the [Script Configuration](#script-configuration-configuration) and [Task Entry](#task-entry-taskentry) segments of this README. Examining the contents of the `\contrib\example_package` directory is also encouraged.
 
-### Script Configuration (`<Configuration>`)
+<br>
 
-The `<Configuration>` XML element allows for specifying how `powerpkg.ps1` should behave. If `<Configuration>` is nonexistent or no values are specified within `package.xml`, the default values for the parameters mentioned below are used.
+## Script Configuration (`<Configuration>`)
 
-`<Configuration>` should be specified only once within `package.xml`.
+<br>
 
-#### `PackageName`
+The `<Configuration>` element allows you to specify a few global options that process when initially running `powerpkg.ps1`. However, specifying this element is not required. If the element is absent from `package.xml`, default values for the parameters listed below will be used.
 
-> - **Required**: No
-> - **Purpose**: Allows for specifying a custom name for a package.
-> - **Default Value**: The name of the package directory.
-> - **Example Value**:
->
-> ```xml
-> <PackageName>Example Package</PackageName>
-> ```
+Only a single instance of the `<Configuration>` element is necessary inside `package.xml`.
 
-#### `BlockHost`
+```xml
+<Configuration>
+    <PackageName></PackageName>
+    <BlockHost></BlockHost>
+    <SuppressNotification></SuppressNotification>
+</Configuration>
+```
 
-> - **Required**: No
-> - **Purpose**: Prevents specified hosts from processing a package.
-> - **Default Value**: `null`
-> - **Example Value**:
->
-> ```xml
-> <BlockHost>examplehost1</BlockHost>
->
-> <BlockHost>examplehost1,examplehost2</BlockHost>
-> ```
->
-> **NOTE**:
->
-> A range of hosts can also be blocked, as well. If you have a set machines whose **first** several characters are identical, such as the following example:
->
-> ```
-> ABCDE1111
-> ABCDE2222
-> ABCDE3333
-> ABCDE4444
-> ABCDE5555
-> ```
->
-> You can block the list of machines mentioned above by specifying the following:
->
-> ```xml
-> <BlockHost>ABCDE</BlockHost>
-> ```
+<br>
 
-#### `SuppressNotification`
+### `PackageName`
 
-> - **Required**: No
-> - **Purpose**: Prevents a balloon notification from displaying upon a successful deployment.
-> - **Default Value**: `true`
-> - **Example Value**:
->
-> ```xml
-> <SuppressNotification>true</SuppressNotification>
->
-> <SuppressNotification>false</SuppressNotification>
-> ```
+<br>
 
-### Task Entry (`<TaskEntry>`)
+**Required**
 
-The `<TaskEntry>` XML element allows for specifying what executables to invoke and how to invoke them.
+No
 
-Because of its purpose, `<TaskEntry>` can also be specified more than once within `package.xml`.
+**Purpose**
 
-#### `TaskName`
+Specifies a custom name for a package.
 
-> - **Required**: Yes
-> - **Purpose**: The title for an individual task entry.
+**Default Value**
+
+Base name of the package directory.
+
+**Example**
+
+```xml
+<PackageName>Example Package</PackageName>
+```
+
+<br>
+
+### `BlockHost`
+
+<br>
+
+**Required**
+
+No
+
+**Purpose**
+
+Prevents specified hosts from processing a package.
+
+**Default Value**
+
+`null`
+
+**Example**
+
+```xml
+<BlockHost>ABCDE12345</BlockHost>
+
+<BlockHost>ABCDE12345,ABCDE67890</BlockHost>
+```
+
+#### Blocking a Range of Hosts
+
+A range of hosts can also be blocked. If you have a set of machines whose **first** several characters are identical, such as the following example:
+
+```
+ABCDE1111
+ABCDE2222
+ABCDE3333
+ABCDE4444
+ABCDE5555
+```
+
+You can block the list of machines by specifying only `ABCDE`:
+
+```xml
+<BlockHost>ABCDE</BlockHost>
+```
+
+<br>
+
+### `SuppressNotification`
+
+<br>
+
+**Required**
+
+No
+
+**Purpose**
+
+Prevents a balloon notification from displaying upon a successful deployment.
+
+**Default Value**
+
+`true`
+
+**Example**
+
+```xml
+<SuppressNotification>true</SuppressNotification>
+
+<SuppressNotification>false</SuppressNotification>
+```
+
+<br>
+
+## Task Entry (`<TaskEntry>`)
+
+<br>
+
+The `<TaskEntry>` element is responsible for handling conditionals and calls of commands and executables.
+
+Multiple instances of the `<TaskEntry>` element can be processed within `package.xml`.
+
+<br>
+
+### `TaskName`
+
+<br>
+
+**Required**
+
+Yes
+
+**Purpose**
+
+Name of an individual task entry.
+
+**Example**
 
 ```xml
 <TaskName>Install Program</TaskName>
 ```
 
-> **NOTE**:
->
-> You can temporarily skip task entries for the sole purpose of debugging and testing packages, by specifying `#` as the first character in this fashion:
->
-> ```xml
-> <TaskName>#Install Program</TaskName>
-> ```
+<br>
 
-#### `Executable`
+> [!NOTE]
+> For debugging purposes, you can temporarily skip task entries without having to remove them from `package.xml`. Refer to the [Skipping Task Entries](#skipping-task-entries) segment of this README.
 
-> - **Required**: Yes
-> - **Purpose**: An executable file/path to invoke.
-> - **Subparamaters**:
->
-> Subparameter | Description
-> ------------ | -----------
-> `[Package]`  | Allows for specifying a file or directory located within a package directory.
+<br>
 
-> **NOTE**:
->
-> Before calling `powershell.exe`, ensure to specify the `-NoProfile` parameter (`powershell.exe -NoProfile Example-Command`), to minimize the risk of arbitrary code execution.
+### `Executable`
 
-##### Whitespace and Quotation Marks
+<br>
 
-When specifying an executable path or arguments containing whitespace, it is recommended to surround such text with double quotation marks.
+**Required**
 
-For individual file and/or directory names containing whitespace, such items should be surrounded by **single** quotation marks. However, note that this tip solely applies to arguments, and not executable paths themselves.
+Yes
 
-Example: `powershell.exe "[Package]'an example.ps1'"` or `"C:\White Space\example.exe" /argument "D:\'More White Space'\Directory"`
+**Purpose**
 
-It is also recommended to always surround files and/or directories specified with the `[Package]` parameter with double quotation marks, to prevent I/O exceptions from being thrown with the usage of whitespace within the directory path of a package directory.
+Command name or an executable path (relative or absolute) to call.
 
-##### Environment Variables
+**Subparameters**
 
-Unfortunately, at this time, powerpkg does not support the independent usage of environment variables. However, as a workaround, you can:
+Name         | Description
+------------ | -----------
+`[Package]`  | Contains the absolute path of a package directory. Enables the ability to target a file or directory located inside a package directory.
 
-- Call `cmd.exe` in the following manner: `cmd.exe /c notepad.exe %SYSTEMDRIVE%\test.txt`.
-- Call `powershell.exe` in the following manner: `powershell.exe Start-Process -FileName notepad.exe -ArgumentList $env:SYSTEMDRIVE\test.txt -Wait`.
-
-##### Examples
-
-Here are other valid example use cases of the `Executable` parameter:
+#### Examples
 
 ```xml
 <Executable>ipconfig.exe</Executable>
@@ -343,54 +420,135 @@ Here are other valid example use cases of the `Executable` parameter:
 <Executable>"[Package]example_directory\'example file with whitespace.exe'"</Executable>
 ```
 
-#### `OperatingSystem`
+#### Whitespace and Quotation Marks
 
-> - **Required**: No
-> - **Purpose**: The operating system a task entry should be processed under.
+When specifying a path containing whitespace, whether that path is an executable or part of an argument, it is recommended to encapsulate it with **double** quotation marks.
 
-When utilizing this parameter, you will want to specify the NT kernel version number of a specific Windows operating system:
+For arguments that reference individual file and / or directory names that contain whitespace, such file and / or directory names should be encapsulated by **single** quotation marks.
 
-Windows Operating System | NT Kernel Version
------------------------- | -----------------
-10                       | `10.0`
-8.1                      | `6.3`
-8                        | `6.2`
-7                        | `6.1`
-Vista                    | `6.0`
+Here's an example that illustrates the use of single and double quotation marks:
 
-And specify a NT kernel version number in this fashion:
+```shell
+powershell.exe -NoProfile "[Package]'an example.ps1'"
 
-```xml
-<OperatingSystem>6.3</OperatingSystem>
+"C:\White Space\example.exe" /argument "D:\'More White Space'\Directory"
 ```
 
-> **NOTE**:
+When using the `[Package]` subparameter, it is recommended to encapsulate an `Executable` value, and the subparameter itself, with double quotation marks. This prevents future I/O errors if the absolute path of the package directory ever changes and features whitespace.
+
+#### Environment Variables
+
+Unfortunately, direct use of environment variables is unsupported. As a workaround, you have two options:
+
+1. Call `cmd.exe`:
+
+```shell
+cmd.exe /c notepad.exe %SYSTEMDRIVE%\test.txt
+```
+
+2. Call `powershell.exe`:
+```shell
+powershell.exe -NoProfile Start-Process -FileName notepad.exe -ArgumentList $env:SYSTEMDRIVE\test.txt -Wait
+```
+
+<br>
+
+> [!WARNING]
+> Before calling `powershell.exe`, minimize the risk of arbitrary code injection by using `-NoProfile`:
 >
-> Because the `OperatingSystem` parameter determines to find a match between a specified value (`6.1`) and the complete version number of a Windows operating system (`6.1.7601`), the value of `6.1.7601`, which indicates a specific build of Windows 7, can be specified, as well.
+> ```shell
+> powershell.exe -NoProfile Example-Command
+> ```
 
-#### `Architecture`
+<br>
 
-> - **Required**: No
-> - **Purpose**: The userspace architecture a task entry should be processed under.
+### `PlatformName`
 
-For executable invocations that depend on a specific architectural environment, you will want to specify the following for:
+<br>
 
-**AMD64** (x64 in Microsoft terminology) environments:
+**Required**
+
+No
+
+**Purpose**
+
+Platform name a task entry should be processed under.
+
+**Example**
 
 ```xml
-<Architecture>AMD64</Architecture>
+<PlatformName>Windows</PlatformName>
+
+<PlatformName>Unix</PlatformName>
 ```
 
-**x86** environments:
+<br>
+
+> [!WARNING]
+> Issues will arise if `powerpkg` attempts to make use of Windows APIs and features on other platforms. For a similar (and superior) solution on other platforms, Ansible is strongly recommended.
+
+<br>
+
+### `PlatformVersion`
+
+<br>
+
+**Required**
+
+No
+
+**Purpose**
+
+Kernel version a task entry should be processed under.
+
+**Example**
 
 ```xml
+<PlatformVersion>10.0</PlatformVersion>
+```
+
+<br>
+
+> [!NOTE]
+> Version matching works recursively. As an example, a version value of `6.1` will match with a specific kernel version of `6.1.7601`.
+
+<br>
+
+### `Architecture`
+
+<br>
+
+**Required**
+
+No
+
+**Purpose**
+
+Userspace architecture a task entry should be processed under.
+
+**Example**
+
+```xml
+<Architecture>x64</Architecture>
+
 <Architecture>x86</Architecture>
 ```
 
-#### `TerminateProcess`
+<br>
 
-> - **Required**: No, except when utilizing the `TerminateMessage` parameter.
-> - **Purpose**: A process, or list of process, to terminate prior to executable invocation.
+### `TerminateProcess`
+
+<br>
+
+**Required**
+
+No, except when utilizing the `TerminateMessage` parameter.
+
+**Purpose**
+
+Process, or list of process, to terminate prior to executable invocation.
+
+**Example**
 
 ```xml
 <TerminateProcess>explorer</TerminateProcess>
@@ -398,23 +556,45 @@ For executable invocations that depend on a specific architectural environment, 
 <TerminateProcess>explorer,notepad</TerminateProcess>
 ```
 
-#### `TerminateMessage`
+<br>
 
-> - **Required**: No
-> - **Purpose**: A message to display to an end-user prior to the termination of processes. Used in conjunction with the `TerminateProcess` parameter.
+### `TerminateMessage`
+
+<br>
+
+**Required**
+
+No
+
+**Purpose**
+
+Message to display to users prior to the termination of system processes. Used in conjunction with the `TerminateProcess` parameter.
+
+**Example**
 
 ```xml
 <TerminateMessage>File Explorer will terminate. When prepared, click on the OK button.</TerminateMessage>
 ```
 
-#### `SuccessExitCode`
+<br>
 
-> - **Required**: No
-> - **Purpose**: Non-zero exit codes that also determine a successful task entry.
+### `SuccessExitCode`
 
-> **NOTE**:
->
-> The `0` exit code is automatically applied to any specified value, regardless as to whether or not it is explicitly specified.
+<br>
+
+**Required**
+
+No
+
+**Purpose**
+
+Non-zero exit codes that indicate a successful task.
+
+**Default Value**
+
+`0`
+
+**Example**
 
 ```xml
 <SuccessExitCode>10</SuccessExitCode>
@@ -422,147 +602,67 @@ For executable invocations that depend on a specific architectural environment, 
 <SuccessExitCode>10,777,1000</SuccessExitCode>
 ```
 
-#### `ContinueIfFail`
+<br>
 
-> - **Required**: No
-> - **Purpose**: Specify as to whether or not to continue with remaining task entires if a specific task entry fails.
+> [!NOTE]
+> The `0` exit code is accounted for, regardless of whether it is specified.
 
-When explicitly utilizing the `ContinueIfFail` parameter and specifying the following value:
+<br>
 
-Value             | Result
------             | ------
-`true`            | `powerpkg.ps1` will continue processing remaining task entires. A task entry set to continue when resulting in a non-zero exit code will not alter the exit code of `powerpkg.ps1`.
-`false` (Default) | `powerpkg.ps1` will fail and result in a non-zero exit code.
+### `ContinueIfFail`
 
-And specify your desired value in this fashion:
+<br>
+
+**Required**
+
+No
+
+**Purpose**
+
+Whether to continue with remaining task entries if one task entry fails.
+
+**Default Value**
+
+`false`
+
+**Values**
+
+Value   | Result
+-----   | ------
+`true`  | `powerpkg` will continue processing remaining task entires.
+`false` | `powerpkg` will stop processing remaining task entries, fail, and return a non-zero exit code.
+
+**Example**
 
 ```xml
 <ContinueIfFail>true</ContinueIfFail>
 ```
 
-#### `VerifyInstall`
+<br>
 
-> - **Required**: No
-> - **Purpose**: Skip a task entry if a program, hotfix, file/directory path, or a specific version of an executable file exist.
-> - **Subparamaters**:
->
-> Subparameter     | Description                                                        | Additional Arguments | Additional Arguments Required?
-> ------------     | -----------                                                        | -------------------- | ------------------------------
-> `[Hotfix]`       | Verify the existence of a hotfix.                                  |                      |
-> `[Path]`         | Verify the existence of a file or directory path.                  |                      |
-> `[Vers_File]`    | Verify the file version of an executable file.                     | `[Build:]`           | Yes
-> `[Vers_Product]` | Verify the product version of an executable file.                  | `[Build:]`           | Yes
-> `[Program]`      | Verify the existence of an installed program name or product code. | `[Build:]`           | No
+### `VerifyInstall`
 
-> **NOTE**:
->
-> When utilizing the `VerifyInstall` parameter, you **must** specify one of the following subparamaters mentioned above.
->
-> The usage of PowerShell environment variables, such as `$env:SYSTEMDRIVE`, is supported by the `VerifyInstall` parameter.
->
-> The usage of quotation marks is not a requirement, even for paths that contain whitespace.
+<br>
 
-##### [Build:] Argument
+**Required**
 
-As you may have noticed, certain parameters take advantage of a **`[Build:]`** argument, which allows you to verify the existence of a specific version number associated with an installed program or executable file. To use this argument, you must specify it at the right side of a provided `VerifyInstall` value, then insert a version number on the right side of its colon. Take the following as an example:
+No, but any value specified must feature a subparameter.
 
-```xml
-<VerifyInstall>[Vers_Product]C:\example_file.exe[Build:1.0]</VerifyInstall>
-```
+**Purpose**
 
-However, unlike the `OperatingSystem` parameter, whatever `[Build:]` version number is specified must be identical to the version number of an installed program or executable file.
+Skip a task entry if a program, hotfix, file / directory path, or a specific version of an executable exists.
 
-##### [Vers_] Subparameters
+**Subparameters**
 
-To utilize the **`[Vers_*]`** subparameters, you will need to retrieve the file or product version numbers from an executable file. To do so:
+Name             | Description                                                        | Argument   | Argument Required
+------------     | -----------                                                        | ---------- | -----------------
+`[Hotfix]`       | Verify the existence of a hotfix.                                  |            |
+`[Path]`         | Verify the existence of a file or directory path.                  |            |
+`[Vers_File]`    | Verify the file version of an executable file.                     | `[Build:]` | Yes
+`[Vers_Product]` | Verify the product version of an executable file.                  | `[Build:]` | Yes
+`[Program]`      | Verify the existence of an installed program name or product code. | `[Build:]` | No
 
-  - Within PowerShell, invoke the following command:
-
-    ```powershell
-    [System.Diagnostics.FileVersionInfo]::GetVersionInfo("C:\example_file.exe") | Select FileVersion, ProductVersion
-    ```
-
-  - And you will notice the following output:
-
-    ```
-    FileVersion       ProductVersion
-    -----------       --------------
-    1.0               1.0
-    ```
-
-  - Then, specify either outputted value inside the `[Build:]` argument in the following manner:
-
-    ```xml
-    <VerifyInstall>[Vers_File]C:\example_file.exe[Build:1.0]</VerifyInstall>
-
-    <VerifyInstall>[Vers_File]$env:SYSTEMDRIVE\example_file.exe[Build:1.0]</VerifyInstall>
-
-    <VerifyInstall>[Vers_Product]C:\example_file.exe[Build:1.0]</VerifyInstall>
-    ```
-
-##### [Program] Subparameter
-
-To utilize the **`[Program]`** subparameter, you can verify the existence of a:
-
-- **Product Code**:
-
-  - Open the `Programs and Features` applet of the Windows Control Panel, and retrieve the name of the installed program you wish to verify the existence of:
-
-    ![Programs and Features](/img/example_verifyinstall_program.gif)
-
-  - Within PowerShell, enter the following command:
-
-    ```powershell
-    Get-ChildItem HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall | % {Get-ItemProperty $_.PSPath} | ? {$_.DisplayName -eq "Example Program"} | Select PSChildName
-    ```
-
-  - Within PowerShell, enter the following command, if you're utilizing a x86 program on an AMD64 system:
-
-    ```powershell
-    Get-ChildItem HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall | % {Get-ItemProperty $_.PSPath} | ? {$_.DisplayName -eq "Example Program"} | Select PSChildName
-    ```
-
-  - And you will notice the following output:
-
-    ```
-    PSChildName
-    -----------
-    {00000000-0000-0000-0000-000000000000}
-    ```
-
-  - Then, specify the outputted value in this fashion:
-
-    ```xml
-    <VerifyInstall>[Program]{00000000-0000-0000-0000-000000000000}</VerifyInstall>
-    ```
-
-  - Or if you wish to verify the existence an installed program's respective version number along with its product code:
-
-    ```xml
-    <VerifyInstall>[Program]{00000000-0000-0000-0000-000000000000}[Build:1.0]</VerifyInstall>
-    ```
-
-- **Program Name**:
-
-  - Open the `Programs and Features` applet of the Windows Control Panel, and retrieve the name of the installed program you wish to verify the existence of:
-
-    ![Programs and Features](/img/example_verifyinstall_program.gif)
-
-  - Then, specify a program name in this fashion:
-
-    ```xml
-    <VerifyInstall>[Program]Example Program</VerifyInstall>
-    ```
-
-  - Or if you wish to verify the existence an installed program's respective version number along with its name:
-
-    ```xml
-    <VerifyInstall>[Program]Example Program[Build:1.0]</VerifyInstall>
-    ```
-
-##### Examples
-
-Here are other valid example use cases of the `VerifyInstall` parameter and its respective subparameters:
+**Example**
 
 ```xml
 <VerifyInstall>[Hotfix]KB0000000</VerifyInstall>
@@ -578,37 +678,180 @@ Here are other valid example use cases of the `VerifyInstall` parameter and its 
 <VerifyInstall>[Path]HKLM:\registry_path</VerifyInstall>
 
 <VerifyInstall>[Path]env:\ENVIRONMENT_VARIABLE</VerifyInstall>
+
+<VerifyInstall>[Vers_Product]C:\example_file.exe[Build:1.0]</VerifyInstall>
+
+<VerifyInstall>[Vers_File]C:\example_file.exe[Build:1.0]</VerifyInstall>
+
+<VerifyInstall>[Vers_File]$env:SYSTEMDRIVE\example_file.exe[Build:1.0]</VerifyInstall>
+
+<VerifyInstall>[Program]{00000000-0000-0000-0000-000000000000}</VerifyInstall>
+
+<VerifyInstall>[Program]{00000000-0000-0000-0000-000000000000}[Build:1.0]</VerifyInstall>
+
+<VerifyInstall>[Program]Example Program</VerifyInstall>
+
+<VerifyInstall>[Program]Example Program[Build:1.0]</VerifyInstall>
 ```
 
-#### `SkipProcessCount`
+#### [Build:] Argument
 
-> - **Required**: No
-> - **Purpose**: Specify as to whether or not a processed task entry should be counted as such and contribute to the overall total of processed task entries, whether it succeeds or fails.
+Some `VerifyInstall` parameters make use of a **`[Build:]`** argument, allowing you to verify a specific version number associated with an installed program or executable file. To use this argument, you must specify it as a suffix of a `VerifyInstall` value. Then, insert a version number to the right of its colon. Take the following as an example, using `1.0` as a version number:
 
-When explicitly utilizing the `SkipProcessCount` parameter and specifying the following value:
+```xml
+<VerifyInstall>[Vers_Product]C:\example_file.exe[Build:1.0]</VerifyInstall>
+```
 
-Value             | Result
------             | ------
-`true`            | `powerpkg.ps1` will not count a processed task entry as such.
-`false` (Default) | `powerpkg.ps1` will count a processed task entry as such.
+However, unlike the `PlatformVersion` parameter, whatever `[Build:]` version number you specify must be identical to the version number of the installed program or executable file you are targeting.
 
-And specify your desired value in this fashion:
+#### [Vers_File] and [Vers_Product] Subparameters
+
+To retrieve the file or product version of an executable file for verification purposes, run the following command within PowerShell:
+
+```powershell
+[System.Diagnostics.FileVersionInfo]::GetVersionInfo("C:\example_file.exe") | Select FileVersion, ProductVersion
+```
+
+Then, you will notice the following output:
+
+```
+FileVersion       ProductVersion
+-----------       --------------
+1.0               1.0
+```
+
+Specify either value inside the `[Build:]` argument in the following manner:
+
+```xml
+<VerifyInstall>[Vers_File]C:\example_file.exe[Build:1.0]</VerifyInstall>
+
+<VerifyInstall>[Vers_File]$env:SYSTEMDRIVE\example_file.exe[Build:1.0]</VerifyInstall>
+
+<VerifyInstall>[Vers_Product]C:\example_file.exe[Build:1.0]</VerifyInstall>
+```
+
+#### [Program] Subparameter — Product Codes
+
+Open the `Programs and Features` applet of the Windows Control Panel (`appwiz.cpl`) and retrieve the name of the installed program you wish to verify the existence of:
+
+![Programs and Features](/img/example_verifyinstall_program.gif)
+
+Open PowerShell and run the following command:
+
+```powershell
+Get-ChildItem HKLM:\Software\Microsoft\Windows\CurrentVersion\Uninstall | % {Get-ItemProperty $_.PSPath} | ? {$_.DisplayName -eq "Example Program"} | Select PSChildName
+```
+
+Or run the following command **if you're utilizing a i386 program on an AMD64 system**:
+
+```powershell
+Get-ChildItem HKLM:\Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall | % {Get-ItemProperty $_.PSPath} | ? {$_.DisplayName -eq "Example Program"} | Select PSChildName
+```
+
+Then, you will notice the following product code:
+
+```powershell
+PSChildName
+-----------
+{00000000-0000-0000-0000-000000000000}
+```
+
+Finally, specify the product code in a task entry:
+
+```xml
+<VerifyInstall>[Program]{00000000-0000-0000-0000-000000000000}</VerifyInstall>
+```
+
+Alternatively, if you wish to verify the existence of a product code and version number of an installed program, use the `[Build:]` argument, using `1.0` as an example version number:
+
+```xml
+<VerifyInstall>[Program]{00000000-0000-0000-0000-000000000000}[Build:1.0]</VerifyInstall>
+```
+
+#### [Program] Subparameter — Program Name
+
+Open the `Programs and Features` applet of the Windows Control Panel (`appwiz.cpl`) and retrieve the name of the installed program you wish to verify the existence of:
+
+![Programs and Features](/img/example_verifyinstall_program.gif)
+
+Then, specify the program name in a task entry:
+
+```xml
+<VerifyInstall>[Program]Example Program</VerifyInstall>
+```
+
+Alternatively, if you wish to verify the existence of a name and version number of an installed program, use the `[Build:]` argument, using `1.0` as an example version number:
+
+```xml
+<VerifyInstall>[Program]Example Program[Build:1.0]</VerifyInstall>
+```
+
+<br>
+
+> [!NOTE]
+> Usage of PowerShell environment variables, such as `$env:SYSTEMDRIVE`, is supported.
+>
+> Usage of quotation marks is not required, even for paths featuring whitespace.
+
+<br>
+
+### `SkipProcessCount`
+
+<br>
+
+**Required**
+
+No
+
+**Purpose**
+
+Whether a task entry should be factored into the overall total of processed task entries, regardless of whether it succeeds or fails.
+
+**Default Value**
+
+`false`
+
+**Values**
+
+Value   | Result
+-----   | ------
+`true`  | Task entry will not be factored.
+`false` | Task entry will be factored.
+
+**Example**
 
 ```xml
 <SkipProcessCount>true</SkipProcessCount>
 ```
 
-## Debugging
+<br>
 
-### Exit Codes
+# Debugging
+
+<br>
+
+## Skipping Task Entries
+
+<br>
+
+For debugging purposes, you can temporarily skip a task entry by specifying `#` as the first character in the `TaskName` parameter of the `<TaskEntry>` element in `package.xml` in the following fashion:
+
+```xml
+<TaskName>#Install Program</TaskName>
+```
+
+<br>
+
+## Exit Codes
+
+<br>
 
 Code | Description
 ---- | -----------
 1    | A task entry terminated with a non-zero exit code.
-2    | An exception rose from a task entry during its executable invocation process.
+2    | An exception arose from a task entry during its processing.
 3    | Initial task entry processing failed.
 4    | A host has been prevented from processing a package.
 5    | A package file was not found.
 6    | No task entries were processed.
 7    | A task entry is missing a required value.
-
