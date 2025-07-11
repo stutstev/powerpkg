@@ -41,7 +41,7 @@ To begin testing powerpkg:
 
 **(2)**: Invoke `powerpkg.ps1`:
 ```shell
-powershell.exe -NoProfile -ExecutionPolicy Unrestricted -File "contrib\examplepackage\powerpkg.ps1"
+powershell.exe -NoProfile -ExecutionPolicy Unrestricted -File "contrib\example_package\powerpkg.ps1"
 ```
 
 **(3)**: *And that's it!*
@@ -210,7 +210,7 @@ Which, with a bit of customization, can become the following example:
 </Package>
 ```
 
-To further familiarize yourself with powerpkg (and especially the above examples), continue reading the [Script Configuration](#script-configuration-configuration) and [Task Entry](#task-entry-taskentry) segments of this README. Examining the contents of the `\contrib\examplepackage` directory is also encouraged.
+To further familiarize yourself with powerpkg (and especially the above examples), continue reading the [Script Configuration](#script-configuration-configuration) and [Task Entry](#task-entry-taskentry) segments of this README. Examining the contents of the `\contrib\example_package` directory is also encouraged.
 
 ### Script Configuration (`<Configuration>`)
 
@@ -612,20 +612,3 @@ Code | Description
 6    | No task entries were processed.
 7    | A task entry is missing a required value.
 
-## License
-
-powerpkg is licensed under the MIT license. For more information regarding this license, refer to the `LICENSE` file located at the root of this repository.
-
-## Additional Comments
-
-```
- ________  ________  ___       __   _______   ________  ________  ___  __    ________
-|\   __  \|\   __  \|\  \     |\  \|\  ___ \ |\   __  \|\   __  \|\  \|\  \ |\   ____\
-\ \  \|\  \ \  \|\  \ \  \    \ \  \ \   __/|\ \  \|\  \ \  \|\  \ \  \/  /|\ \  \___|
- \ \   ____\ \  \\\  \ \  \  __\ \  \ \  \_|/_\ \   _  _\ \   ____\ \   ___  \ \  \  ___  
-  \ \  \___|\ \  \\\  \ \  \|\__\_\  \ \  \_|\ \ \  \\  \\ \  \___|\ \  \\ \  \ \  \|\  \
-   \ \__\    \ \_______\ \____________\ \_______\ \__\\ _\\ \__\    \ \__\\ \__\ \_______\
-    \|__|     \|_______|\|____________|\|_______|\|__|\|__|\|__|     \|__| \|__|\|_______|
-```
-
-Fellow PowerShell enthusiasts, this is my contribution to the community. I hope you take advantage of this project I have worked very hard on. You guys rock!

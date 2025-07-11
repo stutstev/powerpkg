@@ -1,0 +1,1 @@
+../../src/powerpkg.ps1
